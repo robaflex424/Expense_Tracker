@@ -7,5 +7,5 @@ class Category(Base):
 
   id = Column(Integer, primary_key=True, index=True)
   name = Column(String(50), nullable=False)
-  user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+  user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
   created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc) )
