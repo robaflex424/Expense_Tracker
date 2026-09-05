@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, Integer, String, Boolean
-from database.database import Base 
+from sqlalchemy.orm import relationship
+from database.database import Base
 
 class User(Base): 
   __tablename__ = "users"
@@ -11,3 +12,6 @@ class User(Base):
   hashed_password = Column(String, nullable=False)
   is_active = Column(Boolean, default=True)
   created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+  categories = relationship("Category", back_populates="user")
+  transactions = relationship("Transaction", back_populates="user")
