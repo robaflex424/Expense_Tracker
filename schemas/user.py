@@ -12,3 +12,7 @@ class UserResponse(BaseModel):
   email: EmailStr
   is_active: bool 
   created_at: datetime
+
+class UserLogin(BaseModel):
+  username: str 
+  password: str 

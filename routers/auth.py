@@ -6,7 +6,14 @@ from security.hashing import hash_password, verify_password
 from sqlalchemy.orm import Session
 from database.database import get_db
 from fastapi import APIRouter, Depends, HTTPException
-from schemas.user import UserCreate, UserResponse
+from schemas.user import (
+  UserCreate, 
+  UserLogin,
+  UserResponse)
+from security.jwt import (
+  TokenResponse,
+  create_access_token, 
+  decode_access_token)
 from models.user import User
 
 router = APIRouter(
@@ -48,3 +55,35 @@ async def register_user(
   db.refresh(user_model)
 
   return user_model
+
+@router.post("/login", response_model=TokenResponse, status_code=200)
+async def login_user(
+    db: db_dependency,
+    user_login: UserLogin
+  ):
+
+  user_model = db.query(User).filter(
+    User.username == user_login.username
+  ).first()
+
+  if user_model is None:
+    raise HTTPException(
+      status_code=404,
+      detail="Account doesn't exist"
+    )
+  
+  if verify_password(
+    user_login.password, 
+    user_model.hashed_password
+  ) is False:
+    raise HTTPException(
+      status_code=401,
+      detail="Incorrect Credentials"
+    )
+  
+  access_token = create_access_token(user_model.id)
+
+  return {
+    "access_token": access_token,
+    "token_type": "Bearer"
+  }
