@@ -2,7 +2,8 @@ from fastapi import (
   APIRouter, 
   Depends, 
   HTTPException, 
-  Path)
+  Path,
+  status)
 
 from models.category import Category
 from models.user import User
@@ -31,7 +32,7 @@ async def get_categories(
 
   return category_model
 
-@router.post("", response_model=CategoryResponse)
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
 async def create_category(
   db: db_dependency,
   create_category: CategoryCreate,
@@ -58,7 +59,7 @@ async def create_category(
 
   return category_model
 
-@router.patch("{category_id}", response_model=CategoryResponse)
+@router.patch("/{category_id}", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
 async def update_category(
   db: db_dependency,
   update_category: CategoryUpdate,
@@ -77,10 +78,32 @@ async def update_category(
       detail="Category not found."
     )
   
-  category_model.name == update_category.name
+  category_model.name = update_category.name
 
   db.commit()
   db.refresh(category_model)
 
   return category_model
 
+@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_category(
+  db: db_dependency,
+  category_id:  int = Path(gt=0),
+  current_user: User = Depends(get_current_user)
+  ):
+
+  category_model = db.query(Category).filter(
+    Category.id == category_id,
+    Category.user_id == current_user.id
+    ).first()
+
+  if category_model is None: 
+    raise HTTPException(
+      status_code=404,
+      detail="Category not found."
+    )
+  
+  db.delete(category_model)
+  db.commit()
+
+  return None
