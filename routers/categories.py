@@ -58,7 +58,7 @@ async def create_category(
 
   return category_model
 
-@router.put("{category_id}", response_model=CategoryResponse)
+@router.patch("{category_id}", response_model=CategoryResponse)
 async def update_category(
   db: db_dependency,
   update_category: CategoryUpdate,
