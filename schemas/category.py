@@ -9,3 +9,6 @@ class CategoryResponse(BaseModel):
   name: str 
   user_id: int 
   created_at: datetime
+
+class CategoryUpdate(BaseModel):
+  name: str
