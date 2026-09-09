@@ -1,10 +1,17 @@
-from datetime import datetime, timezone, timedelta
+from datetime import (
+  datetime, 
+  timezone, 
+  timedelta)
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import (
+  Depends, 
+  HTTPException)
 from fastapi.security import OAuth2PasswordBearer
 
-from jose import JWTError, jwt
+from jose import (
+  JWTError, 
+  jwt)
 
 from pydantic import BaseModel
 from models.user import User
@@ -75,7 +82,6 @@ def get_current_user(
         status_code=401,
         detail="User is not found."
       )
-    
 
   except JWTError:
     raise HTTPException(
