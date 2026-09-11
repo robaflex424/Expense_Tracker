@@ -1,6 +1,6 @@
 from datetime import datetime 
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,3 +22,10 @@ class TransactionResponse(BaseModel):
   created_at: datetime 
 
   model_config = ConfigDict(from_attributes=True)
+
+class TransactionUpdate(BaseModel):
+  amount: Optional[int] = None
+  description: Optional[str] = None
+  category_id: Optional[int] = None
+  type: Optional[str] = None
+  transaction_date: Optional[datetime] = None

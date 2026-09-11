@@ -1,18 +1,18 @@
-from mmap import PAGESIZE
 from fastapi import (
   APIRouter, 
-  HTTPException, 
+  HTTPException,
+  Path, 
   status, 
   Depends, 
   Query)
-from sqlalchemy.orm import query
 from models.category import Category
 from models.transaction import Transaction
 from models.user import User
 from routers.auth import db_dependency
 from schemas.transaction import (
   TransactionCreate, 
-  TransactionResponse)
+  TransactionResponse,
+  TransactionUpdate)
 from security.jwt import get_current_user
 
 
@@ -92,3 +92,64 @@ async def get_transactions(
   transactions = query.offset(offset).limit(page_size).all()
 
   return transactions
+
+@router.get("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
+async def get_transaction(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user),
+  transaction_id: int = Path(ge=1)
+  ):
+
+  transaction_model = db.query(Transaction).filter(
+    Transaction.id == transaction_id,
+    Transaction.user_id == current_user.id
+  ).first()
+
+  if transaction_model is None:
+    raise HTTPException(
+      status_code=status.HTTP_404_NOT_FOUND,
+      detail="Transaction doesn't exist."
+    )
+
+  return transaction_model
+
+@router.patch("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
+async def update_transaction(
+  db: db_dependency,
+  transaction_update: TransactionUpdate,  
+  current_user: User = Depends(get_current_user),
+  transaction_id: int = Path(ge=1)
+  ):
+
+  transaction_model = db.query(Transaction).filter(
+    Transaction.id == transaction_id,
+    Transaction.user_id == current_user.id
+  ).first()
+
+  if transaction_model is None:
+    raise HTTPException(
+      status_code=status.HTTP_404_NOT_FOUND,
+      detail="Transaction doesn't exist."
+    )
+  
+  update_model = transaction_update.model_dump(exclude_unset=True)
+
+  if "category_id" in update_model:
+    category = db.query(Category).filter(
+      Category.id == update_model["category_id"],
+      Category.user_id == current_user.id
+    ).first()
+
+    if category is None:
+      raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Category doesn't exist."
+      )
+  
+  for field, value in update_model.items():
+    setattr(transaction_model, field, value)
+  
+  db.commit()
+  db.refresh(transaction_model)
+
+  return transaction_model
