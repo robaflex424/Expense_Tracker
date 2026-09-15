@@ -1,3 +1,4 @@
+from typing import Literal, Optional
 from fastapi import (
   APIRouter, 
   HTTPException,
@@ -6,6 +7,7 @@ from fastapi import (
   Depends, 
   Query)
 from starlette.status import HTTP_404_NOT_FOUND
+from models import transaction
 from models.category import Category
 from models.transaction import Transaction
 from models.user import User
@@ -175,3 +177,53 @@ async def delete_transaction(
   db.delete(transaction_model)
   db.commit()
 
+@router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
+async def filter_transaction_type(
+  db: db_dependency,
+  type: Literal["income", "expense"] | None = None,
+  page: int = Query(1, ge=1),
+  page_size: int = Query(10, ge=1, le=100),
+  sort_by: str = Query("created_at"),
+  sort_order: str = Query("desc"),
+  current_user: User = Depends(get_current_user),
+  ):
+  if type == "income":
+    transactions_model = db.query(Transaction).filter(
+      Transaction.type == "income",
+      Transaction.user_id == current_user.id
+    )
+    
+  elif type == "expense":
+    transactions_model = db.query(Transaction).filter(
+      Transaction.type == "expense",
+      Transaction.user_id == current_user.id
+    )
+  else:
+    transactions_model = db.query(Transaction).filter(
+      Transaction.user_id == current_user.id
+    )
+  
+  if sort_by not in ["amount", "created_at", "transaction_date"]:
+    raise HTTPException(
+      status_code=status.HTTP_400_BAD_REQUEST,
+      detail="Invalid sort field."
+    )
+
+  if sort_order not in ["asc", "desc"]: 
+    raise HTTPException(
+      status_code=status.HTTP_400_BAD_REQUEST,
+      detail="Invalid sort order."
+    )
+  
+  offset = (page - 1) * page_size
+
+  sort_column = getattr(Transaction, sort_by)
+
+  if sort_order == "asc":
+    transactions = transactions_model.order_by(sort_column.asc())
+  else:
+    transactions = transactions_model.order_by(sort_column.desc())  
+  
+  transactions = transactions.offset(offset).limit(page_size).all()
+
+  return transactions
