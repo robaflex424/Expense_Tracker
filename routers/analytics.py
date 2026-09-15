@@ -1,13 +1,13 @@
-from calendar import month
+from datetime import date
 from fastapi import (
   APIRouter, 
   status, 
+  Query,
   Depends)
 from decimal import Decimal
 from models.transaction import Transaction
 from sqlalchemy import (
-  func, 
-  extract)
+  func)
 from routers.auth import db_dependency
 from models.user import User
 from schemas.analytics import (
@@ -174,3 +174,44 @@ async def get_monthly_income(
   )
 
   return monthly_income
+
+@analytics_router.get("/date-range", status_code=status.HTTP_200_OK, response_model=AnalyticsGlobalResponse)
+async def get_date_range_analytics(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user),
+  start_date: date = Query(),
+  end_date: date = Query()
+  ):
+
+  total_income = (
+    db.query(
+      func.sum(Transaction.amount)
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "income",
+      Transaction.transaction_date >= start_date,
+      Transaction.transaction_date <= end_date
+    ).scalar()
+  )
+
+  total_expense = (
+    db.query(
+      func.sum(Transaction.amount)
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense",
+      Transaction.transaction_date >= start_date,
+      Transaction.transaction_date <= end_date
+    ).scalar()
+  )
+
+  total_income = total_income or Decimal("0")
+  total_expense = total_expense or Decimal("0")
+
+  balance = total_income - total_expense
+
+  return {
+    "total_income": total_income,
+    "total_expense": total_expense,
+    "balance": balance
+  }
