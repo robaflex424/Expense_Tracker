@@ -5,6 +5,7 @@ from fastapi import (
   status, 
   Depends, 
   Query)
+from starlette.status import HTTP_404_NOT_FOUND
 from models.category import Category
 from models.transaction import Transaction
 from models.user import User
@@ -153,3 +154,24 @@ async def update_transaction(
   db.refresh(transaction_model)
 
   return transaction_model
+
+@router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_transaction(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user),
+  transaction_id: int = Path(gt=0)
+  ):
+  transaction_model = db.query(Transaction).filter(
+    Transaction.id == transaction_id,
+    Transaction.user_id == current_user.id
+  ).first()
+
+  if transaction_model is None:
+    raise HTTPException(
+      status_code=status.HTTP_404_NOT_FOUND,
+      detail="Transaction not found."
+    )
+  
+  db.delete(transaction_model)
+  db.commit()
+
