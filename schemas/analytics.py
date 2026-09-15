@@ -21,3 +21,6 @@ class AnalyticsExpenseResponse(BaseModel):
   balance: Decimal 
   average_transaction: Decimal
   transaction_count: int
+
+class AnalyticsTopCategory:
+  category_id: int | None = None

@@ -13,7 +13,8 @@ from models.user import User
 from schemas.analytics import (
   AnalyticsGlobalResponse, 
   AnalyticsIncomeResponse, 
-  AnalyticsExpenseResponse)
+  AnalyticsExpenseResponse,
+  AnalyticsTopCategory)
 from security.jwt import get_current_user
 
 analytics_router = APIRouter(
@@ -152,7 +153,6 @@ async def get_monthly_spending(
 
   return monthly_spending
 
-
 @analytics_router.get("/monthly-income", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
 async def get_monthly_income(
   db: db_dependency, 
@@ -214,4 +214,34 @@ async def get_date_range_analytics(
     "total_income": total_income,
     "total_expense": total_expense,
     "balance": balance
+  }
+
+@analytics_router.get("/top-category", status_code=status.HTTP_200_OK, response_model=AnalyticsTopCategory)
+async def get_top_category(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+  categories_grouped_desc = (
+    db.query(
+      Transaction.category_id,
+      func.sum(Transaction.amount).label("total_spent")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    ).group_by(
+      Transaction.category_id
+    ).order_by(
+      func.sum(Transaction.amount).label("total_spent").desc()
+    ).first()
+  ) 
+
+  if categories_grouped_desc is None:
+    return {
+      "category_id": None
+    }
+
+  category_id = int(categories_grouped_desc[0])
+
+  return {
+    "category_id": category_id
   }
