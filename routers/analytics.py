@@ -71,3 +71,18 @@ async def get_balance_analytics(
   balance = (total_income or 0) - (total_expense or 0)
 
   return {"balance": balance}
+
+@router.get("/average-expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+async def get_average_expense_analytics(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+
+  average_expense = db.query(
+    func.avg(Transaction.amount)
+  ).filter(
+    Transaction.user_id == current_user.id,
+    Transaction.type == "expense"
+  ).scalar()
+
+  return {"average_transaction": average_expense or Decimal("0")}
