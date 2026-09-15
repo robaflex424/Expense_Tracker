@@ -19,12 +19,12 @@ from schemas.transaction import (
 from security.jwt import get_current_user
 
 
-router = APIRouter(
+transaction_router = APIRouter(
   prefix="/transactions",
   tags=["transactions"]
 )
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=TransactionResponse)
+@transaction_router.post("", status_code=status.HTTP_201_CREATED, response_model=TransactionResponse)
 async def create_transaction(
   db: db_dependency,
   transaction_create: TransactionCreate,
@@ -57,7 +57,7 @@ async def create_transaction(
 
   return transaction_model
 
-@router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
+@transaction_router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
 async def get_transactions(
   db: db_dependency,
   current_user: User = Depends(get_current_user),
@@ -96,7 +96,7 @@ async def get_transactions(
 
   return transactions
 
-@router.get("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
+@transaction_router.get("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
 async def get_transaction(
   db: db_dependency,
   current_user: User = Depends(get_current_user),
@@ -116,7 +116,7 @@ async def get_transaction(
 
   return transaction_model
 
-@router.patch("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
+@transaction_router.patch("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
 async def update_transaction(
   db: db_dependency,
   transaction_update: TransactionUpdate,  
@@ -157,7 +157,7 @@ async def update_transaction(
 
   return transaction_model
 
-@router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+@transaction_router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_transaction(
   db: db_dependency,
   current_user: User = Depends(get_current_user),
@@ -177,14 +177,14 @@ async def delete_transaction(
   db.delete(transaction_model)
   db.commit()
 
-@router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
+@transaction_router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
 async def filter_transaction_type(
   db: db_dependency,
   type: Literal["income", "expense"] | None = None,
   page: int = Query(1, ge=1),
   page_size: int = Query(10, ge=1, le=100),
-  min_amount: Decimal(ge=0) | None = None,
-  max_amount: Decimal(ge=0) | None = None,  
+  min_amount: Decimal | None = None,
+  max_amount: Decimal | None = None,  
   start_date: date | None = None,
   end_date: date | None = None, 
   sort_by: str = Query("created_at"),

@@ -13,12 +13,12 @@ from schemas.analytics import (
   AnalyticsExpenseResponse)
 from security.jwt import get_current_user
 
-router = APIRouter(
+analytics_router = APIRouter(
   prefix="/analytics",
   tags=["analytics"]
 )
 
-@router.get("/income", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
+@analytics_router.get("/income", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
 async def get_income_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -33,7 +33,7 @@ async def get_income_analytics(
   
   return {"total_income": total_income}
 
-@router.get("/expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+@analytics_router.get("/expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
 async def get_expense_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -48,7 +48,7 @@ async def get_expense_analytics(
 
   return {"total_expense": total_expense}
 
-@router.get("/balance", status_code=status.HTTP_200_OK, response_model=AnalyticsGlobalResponse)
+@analytics_router.get("/balance", status_code=status.HTTP_200_OK, response_model=AnalyticsGlobalResponse)
 async def get_balance_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -72,7 +72,7 @@ async def get_balance_analytics(
 
   return {"balance": balance}
 
-@router.get("/average-expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+@analytics_router.get("/average-expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
 async def get_average_expense_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -86,3 +86,24 @@ async def get_average_expense_analytics(
   ).scalar()
 
   return {"average_transaction": average_expense or Decimal("0")}
+
+@analytics_router.get("/spending-by-category", status_code=status.HTTP_200_OK)
+async def get_spendings_per_category(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+
+  spendings_per_category = (
+    db.query(
+      Transaction.category_id,
+      func.sum(Transaction.amount)
+    )
+    .filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    )
+    .group_by(Transaction.category_id)
+    .all()
+  )
+
+  return spendings_per_category

@@ -15,12 +15,12 @@ from schemas.category import (
   CategoryUpdate)
 from security.jwt import get_current_user
 
-router = APIRouter(
+categories_router = APIRouter(
   prefix="/categories",
   tags=["categories"]
 )
 
-@router.get("", response_model=CategoryResponse)
+@categories_router.get("", response_model=CategoryResponse)
 async def get_categories(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -32,7 +32,7 @@ async def get_categories(
 
   return category_model
 
-@router.post("", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
+@categories_router.post("", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
 async def create_category(
   db: db_dependency,
   create_category: CategoryCreate,
@@ -59,7 +59,7 @@ async def create_category(
 
   return category_model
 
-@router.patch("/{category_id}", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
+@categories_router.patch("/{category_id}", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
 async def update_category(
   db: db_dependency,
   update_category: CategoryUpdate,
@@ -85,7 +85,7 @@ async def update_category(
 
   return category_model
 
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+@categories_router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
   db: db_dependency,
   category_id:  int = Path(gt=0),

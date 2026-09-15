@@ -1,10 +1,8 @@
-from typing import Annotated
-
 from sqlalchemy import or_
 
 from security.hashing import hash_password, verify_password
 from sqlalchemy.orm import Session
-from database.database import get_db
+from database.database import db_dependency
 from fastapi import APIRouter, Depends, HTTPException
 from schemas.user import (
   UserCreate, 
@@ -16,14 +14,12 @@ from security.jwt import (
   decode_access_token)
 from models.user import User
 
-router = APIRouter(
+auth_router = APIRouter(
   prefix="/auth",
   tags=["auth"]
 )
 
-db_dependency = Annotated(Session, Depends(get_db))
-
-@router.post("/register", response_model=UserResponse ,status_code=201)
+@auth_router.post("/register", response_model=UserResponse ,status_code=201)
 async def register_user(
   db: db_dependency, 
   user_create: UserCreate
@@ -56,7 +52,7 @@ async def register_user(
 
   return user_model
 
-@router.post("/login", response_model=TokenResponse, status_code=200)
+@auth_router.post("/login", response_model=TokenResponse, status_code=200)
 async def login_user(
     db: db_dependency,
     user_login: UserLogin

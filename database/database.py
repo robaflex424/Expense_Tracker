@@ -1,5 +1,7 @@
+from typing import Annotated
+from fastapi import Depends
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 
 SQLALCHEMY_SQLITE_DATABASE_URL = "sqlite:///./expense_tracker.db"
@@ -23,5 +25,7 @@ def get_db():
     yield db 
   finally: 
     db.close() 
+
+db_dependency = Annotated[Session, Depends(get_db)]
 
 Base = declarative_base()
