@@ -33,17 +33,3 @@ async def get_income_analytics(
   
   return {"total_income": total_income}
 
-@router.get("/expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
-async def get_expense_analytics(
-  db: db_dependency,
-  current_user: User = Depends(get_current_user)
-  ):
-  
-  total_expense = db.query(
-    func.sum(Transaction.amount)
-    ).filter(
-      Transaction.user_id == current_user.id,
-      Transaction.type == "expense"
-    ).scalar()
-
-  return {"total_expense": total_expense}
