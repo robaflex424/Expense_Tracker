@@ -191,8 +191,7 @@ async def filter_transaction_type(
   sort_order: str = Query("desc"),
   current_user: User = Depends(get_current_user),
   ):
-
-# --------  IF/ELIF/ELSE TYPE --------   
+  # --------  IF/ELIF/ELSE TYPE --------   
   if type == "income":
     transactions_model = db.query(Transaction).filter(
       Transaction.type == "income",
@@ -209,21 +208,21 @@ async def filter_transaction_type(
       Transaction.user_id == current_user.id
     )
   
-# --------  Applying max & min_amount on transaction_model  --------  
+  # --------  Applying max & min_amount on transaction_model  --------  
   if min_amount is not None:
     transactions_model = transactions_model.filter(Transaction.amount >= min_amount)
 
   if max_amount is not None:
     transactions_model = transactions_model.filter(Transaction.amount <= max_amount)
 
-# --------  Applying start & end_date on transaction_model  --------  
+  # --------  Applying start & end_date on transaction_model  --------  
   if start_date is not None:
     transactions_model = transactions_model.filter(Transaction.transaction_date >= start_date)
 
   if end_date is not None:
     transactions_model = transactions_model.filter(Transaction.transaction_date <= end_date)
 
-# --------  IF SORT_BY IS VALID --------
+  # --------  IF SORT_BY IS VALID --------
 
   if sort_by not in ["amount", "created_at", "transaction_date"]:
     raise HTTPException(
@@ -237,19 +236,19 @@ async def filter_transaction_type(
       detail="Invalid sort order."
     )
   
-# --------  CREATING OFFSET  --------
+  # --------  CREATING OFFSET  --------
 
   offset = (page - 1) * page_size
 
   sort_column = getattr(Transaction, sort_by)
 
-# --------  ORDERING TRANSACTIONS --------
+  # --------  ORDERING TRANSACTIONS --------
   if sort_order == "asc":
     transactions = transactions_model.order_by(sort_column.asc())
   else:
     transactions = transactions_model.order_by(sort_column.desc())  
 
-# Setting offset & limit on transactions so its ready to be returned
+  # Setting offset & limit on transactions so its ready to be returned
   transactions = transactions.offset(offset).limit(page_size).all()
 
   return transactions
