@@ -151,3 +151,26 @@ async def get_monthly_spending(
   )
 
   return monthly_spending
+
+
+@analytics_router.get("/monthly-income", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
+async def get_monthly_income(
+  db: db_dependency, 
+  current_user: User = Depends(get_current_user)
+  ):
+
+  monthly_income = (
+    db.query(
+      func.date_trunc("month", Transaction.transaction_date).label("month"),
+      func.sum(Transaction.amount).label("total_income")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "income"
+    ).group_by(
+      func.date_trunc("month", Transaction.transaction_date)
+    ).order_by(
+      func.date_trunc("month", Transaction.transaction_date)
+    ).all()
+  )
+
+  return monthly_income
