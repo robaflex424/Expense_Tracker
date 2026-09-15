@@ -47,3 +47,27 @@ async def get_expense_analytics(
     ).scalar()
 
   return {"total_expense": total_expense}
+
+@router.get("/balance", status_code=status.HTTP_200_OK, response_model=AnalyticsGlobalResponse)
+async def get_balance_analytics(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+  
+  total_income = db.query(
+    func.sum(Transaction.amount)
+  ).filter(
+    Transaction.user_id == current_user.id,
+    Transaction.type == "income"
+  ).scalar()
+
+  total_expense = db.query(
+    func.sum(Transaction.amount)
+  ).filter(
+    Transaction.user_id == current_user.id,
+    Transaction.type == "expense"
+  ).scalar()
+
+  balance = (total_income or 0) - (total_expense or 0)
+
+  return {"balance": balance}
