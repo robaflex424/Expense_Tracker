@@ -1,10 +1,13 @@
+from calendar import month
 from fastapi import (
   APIRouter, 
   status, 
   Depends)
 from decimal import Decimal
 from models.transaction import Transaction
-from sqlalchemy import func, select
+from sqlalchemy import (
+  func, 
+  extract)
 from routers.auth import db_dependency
 from models.user import User
 from schemas.analytics import (
@@ -88,15 +91,15 @@ async def get_average_expense_analytics(
   return {"average_transaction": average_expense or Decimal("0")}
 
 @analytics_router.get("/spending-by-category", status_code=status.HTTP_200_OK)
-async def get_spendings_per_category(
+async def get_spendings_by_category(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
   ):
 
-  spendings_per_category = (
+  spendings_by_category = (
     db.query(
       Transaction.category_id,
-      func.sum(Transaction.amount)
+      func.sum(Transaction.amount).label("total_spent")
     )
     .filter(
       Transaction.user_id == current_user.id,
@@ -106,4 +109,45 @@ async def get_spendings_per_category(
     .all()
   )
 
-  return spendings_per_category
+  return spendings_by_category
+
+@analytics_router.get("/income-by-category", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
+async def get_income_by_category(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+  income_by_category = (
+    db.query(
+      Transaction.category_id,
+      func.sum(Transaction.amount).label("total_income")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "income"
+    ).group_by(
+      Transaction.category_id
+    ).all()
+  )
+
+  return income_by_category
+
+@analytics_router.get("/monthly-spending", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+async def get_monthly_spending(
+  db: db_dependency, 
+  current_user: User = Depends(get_current_user)
+  ):
+  
+  monthly_spending = (
+    db.query(
+      func.date_trunc("month", Transaction.transaction_date).label("month"),
+      func.sum(Transaction.amount).label("total_expense")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    ).group_by(
+      func.date_trunc("month", Transaction.transaction_date)
+    ).order_by(
+      func.date_trunc("month", Transaction.transaction_date)
+    ).all()
+  )
+
+  return monthly_spending
