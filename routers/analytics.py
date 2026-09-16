@@ -11,6 +11,7 @@ from sqlalchemy import (
 from routers.auth import db_dependency
 from models.user import User
 from schemas.analytics import (
+  AnalyticsExpenseInPercentagePerCategoryResponse,
   AnalyticsGlobalResponse, 
   AnalyticsIncomeResponse, 
   AnalyticsExpenseResponse,
@@ -245,3 +246,48 @@ async def get_top_category(
   return {
     "category_id": category_id
   }
+
+@analytics_router.get(
+  "/percentage-of-category", 
+  status_code=status.HTTP_200_OK,
+  response_model=AnalyticsExpenseInPercentagePerCategoryResponse
+  )
+async def get_percentage_of_category_based_on_total_expenses(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+
+  total_expense = (
+    db.query(
+      func.sum(Transaction.amount).label("total_spent")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    ).scalar()
+  )
+
+  total_expense = total_expense or Decimal("0")
+
+  if total_expense == 0:
+    return [] 
+  
+  category_spent = (
+    db.query(
+      Transaction.category_id,
+      func.sum(Transaction.amount).label("category_total")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    ).group_by(
+      Transaction.category_id
+    ).all()
+  )
+
+  return [
+    {
+      "category_id": category_id,
+      "total_expense": total_expense,
+      "percentage": (category_total / total_expense) * 100
+    }
+    for category_id, category_total in category_spent
+  ]

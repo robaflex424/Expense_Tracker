@@ -24,3 +24,8 @@ class AnalyticsExpenseResponse(BaseModel):
 
 class AnalyticsTopCategory:
   category_id: int | None = None
+
+class AnalyticsExpenseInPercentagePerCategoryResponse(BaseModel):
+  category_id: int 
+  total_expense: Decimal
+  percentage: Decimal
