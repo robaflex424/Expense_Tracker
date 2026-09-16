@@ -4,7 +4,7 @@ def test_create_transaction(client):
     "/auth/register",
     json={
       "username": "robaak1105",
-      "email": "akroba11050@gmail.com",
+      "email": "akroba1105@gmail.com",
       "password": "robaak11050303"
     }
   )
@@ -64,3 +64,81 @@ def test_create_transaction(client):
   assert data["description"] == "Bought a G-Wagon at 19"
   assert data["type"] == "expense"
   assert data["category_id"] == category_id
+
+def test_get_transaction(client):
+  # Registering user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "robaak1105",
+      "email": "akroba1105@gmail.com",
+      "password": "robaak11050303"
+    }
+  )
+  
+  assert register_response.status_code == 201 
+
+  # Logging user in 
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaak1105",
+      "password": "robaak11050303"
+    }
+  )
+
+  assert login_response.status_code == 200
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating category 
+  category_response = client.post(
+    "/categories",
+    json={
+      "name": "Real Estate"
+    },
+    headers=headers
+  )
+
+  # Getting category's id from category_response
+  category_id = category_response.json()["id"]
+
+  assert category_response.status_code == 201 
+
+  # Creating transnaction 
+  transaction_response = client.post(
+    "/transactions",
+    json={
+      "amount": "565000.00",
+      "description": "Bought a big house with 2 garages and pool.",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  # Getting transactions id from transaction_response
+  transaction_id = transaction_response.json()["id"]
+
+  assert transaction_response.status_code == 201
+
+  # Getting specific Transaction
+  response = client.get(
+    f"/transactions/{transaction_id}",
+    headers=headers
+  )
+
+  data = response.json()
+
+  assert response.status_code == 200
+
+  assert data["id"] == transaction_id
+  assert data["amount"] == 565000.00
+  assert data["description"] == "Bought a big house with 2 garages and pool."
+  assert data["type"] == "expense"
+  assert data["transaction_date"] == "2029-09-16T12:00:00"
