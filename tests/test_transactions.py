@@ -308,7 +308,7 @@ def test_delete_transaction(client):
 
   assert get_transaction_by_id_response.status_code == 404
 
-def test_get_transaction(client):
+def test_get_specific_transaction(client):
   # Registering user
   register_response = client.post(
     "/auth/register",
@@ -364,6 +364,8 @@ def test_get_transaction(client):
     headers=headers
   )  
 
+  assert transaction_response_1.status_code == 201
+
   # Creating transnaction 2
   transaction_response_2 = client.post(
     "/transactions",
@@ -376,6 +378,8 @@ def test_get_transaction(client):
     },
     headers=headers
   )  
+
+  assert transaction_response_2.status_code == 201
 
   # Creating transnaction 3
   transaction_response_3 = client.post(
@@ -390,6 +394,8 @@ def test_get_transaction(client):
     headers=headers
   )
 
+  assert transaction_response_3.status_code == 201
+
   # Creating a transaction 4
   transaction_response_4 = client.post(
     "/transactions",
@@ -402,3 +408,33 @@ def test_get_transaction(client):
     },
     headers=headers
   )
+
+  assert transaction_response_4.status_code == 201
+
+  # Calling get on all transactions
+  get_all_transactions = client.get(
+    "/transactions",
+    headers=headers
+  )
+
+  assert get_all_transactions.status_code == 200
+
+  all_transactions = get_all_transactions.json()
+
+  assert isinstance(all_transactions, list)
+
+  user_id = register_response.json()["id"]
+
+  for transaction in all_transactions:
+    assert transaction["user_id"] == user_id
+
+  # Checking query parameters
+  get_transactions_by_query_search_response = client.get(
+    "/transactions?page=1&page_size=2",
+    headers=headers
+  )
+
+  all_transactions_query = get_transactions_by_query_search_response.json()
+
+  assert isinstance(all_transactions_query, list)
+  assert len(all_transactions_query) == 2
