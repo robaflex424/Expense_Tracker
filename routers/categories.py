@@ -20,7 +20,7 @@ categories_router = APIRouter(
   tags=["categories"]
 )
 
-@categories_router.get("", response_model=CategoryResponse)
+@categories_router.get("", status_code=status.HTTP_200_OK, response_model=CategoryResponse)
 async def get_categories(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -32,7 +32,7 @@ async def get_categories(
 
   return category_model
 
-@categories_router.post("", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
+@categories_router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
   db: db_dependency,
   create_category: CategoryCreate,

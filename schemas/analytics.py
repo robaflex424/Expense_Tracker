@@ -22,7 +22,7 @@ class AnalyticsExpenseResponse(BaseModel):
   average_transaction: Decimal
   transaction_count: int
 
-class AnalyticsTopCategory:
+class AnalyticsTopCategory(BaseModel):
   category_id: int | None = None
 
 class AnalyticsExpenseInPercentagePerCategoryResponse(BaseModel):

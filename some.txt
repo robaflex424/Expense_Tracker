@@ -1,35 +1,36 @@
 def test_create_transaction(client):
-  # Registering user
+  # Register user
   register_response = client.post(
     "/auth/register",
     json={
-      "username": "robaak1105",
-      "email": "akroba11050@gmail.com",
+      "username": "robaflex1105",
+      "email": "akroba1105@gmail.com",
       "password": "robaak11050303"
     }
   )
-
   assert register_response.status_code == 201
 
-  # Logging in user 
+  # Login user
+
   login_response = client.post(
     "/auth/login",
     json={
-      "username": "robaak1105",
+      "username": "robaflex1105",
       "password": "robaak11050303"
     }
   )
 
-  assert login_response.status_code == 200
+  assert login_response.status_code == 200 
 
-  # Retrieving token from response
+  # Getting token
   token = login_response.json()["access_token"]
 
+  # Putting header in a variable
   headers = {
     "Authorization": f"Bearer {token}"
   }
 
-  # Creating a category for future use 
+  # Creating a category
   category_response = client.post(
     "/categories",
     json={
@@ -38,29 +39,29 @@ def test_create_transaction(client):
     headers=headers
   )
 
-  assert category_response.status_code == 201
+  assert category_response.status_code == 200 
 
-  # Putting category's id in a variable for future use
+  # Getting category id for future use
   category_id = int(category_response.json()["id"])
 
-  # Creating a transaction
+  # Creating a transaction 
   transaction_response = client.post(
     "/transactions",
     json={
       "amount": "166150.00",
-      "description": "Bought a G-Wagon at 19",
+      "description": "Bought G-Wagon at 19",
       "type": "expense",
       "category_id": category_id,
-      "transaction_date": "2029-09-16T12:00:00"
+      "transaction_date": "2029-09-16T:12:00:00"
     },
     headers=headers
   )
 
-  assert transaction_response.status_code == 201
+  assert transaction_response.status_code == 201 
 
   data = transaction_response.json()
 
   assert data["amount"] == 166150.00
-  assert data["description"] == "Bought a G-Wagon at 19"
+  assert data["description"] == "Bought G-Wagon at 19"
   assert data["type"] == "expense"
   assert data["category_id"] == category_id
