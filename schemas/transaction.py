@@ -13,7 +13,7 @@ class TransactionCreate(BaseModel):
 
 class TransactionResponse(BaseModel):
   id: int
-  amount: int 
+  amount: Decimal
   description: str 
   type: str 
   category_id: int 

@@ -60,7 +60,7 @@ def test_create_transaction(client):
 
   data = transaction_response.json()
 
-  assert data["amount"] == 166150.00
+  assert data["amount"] == "166150.00"
   assert data["description"] == "Bought a G-Wagon at 19"
   assert data["type"] == "expense"
   assert data["category_id"] == category_id
@@ -138,7 +138,7 @@ def test_get_transaction(client):
   assert response.status_code == 200
 
   assert data["id"] == transaction_id
-  assert data["amount"] == 565000.00
+  assert data["amount"] == "565000.00"
   assert data["description"] == "Bought a big house with 2 garages and pool."
   assert data["type"] == "expense"
   assert data["transaction_date"] == "2029-09-16T12:00:00"
@@ -218,8 +218,187 @@ def test_patch_transaction(client):
   data = response.json()
 
   assert data["id"] == transaction_id
-  assert data["amount"] == 56000.00
+  assert data["amount"] == "56000.00"
   assert data["description"] == "Monthly paycheck with bonus."
   assert data["type"] == "income"
   assert data["category_id"] == category_id
   assert data["transaction_date"] == "2027-09-16T12:00:00"
+
+def test_delete_transaction(client):
+  # Registering user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "robaak1105",
+      "email": "akroba1105@gmail.com",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert register_response.status_code == 201
+
+  # Logging user in 
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaak1105",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert login_response.status_code == 200
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating a category 
+  category_response = client.post(
+    "/categories",
+    json={
+      "name": "Infra bill"
+    },
+    headers=headers
+  )
+
+  assert category_response.status_code == 201
+
+  category_id = category_response.json()["id"]
+
+  # Creating a transaction
+  transaction_response = client.post(
+    "/transactions",
+    json={
+      "amount" : "2238.43",
+      "description": "Bill from AWS services.",
+      "category_id": category_id,
+      "type": "expense",
+      "transaction_date": "2029-06-24T12:00:00"
+    },
+    headers=headers
+  )
+
+  data = transaction_response.json()
+
+  assert transaction_response.status_code == 201 
+
+  transaction_id = data["id"]
+    
+  assert data["amount"] == "2238.43"
+  assert data["description"] == "Bill from AWS services."
+  assert data["category_id"] == category_id
+  assert data["type"] == "expense"
+  assert data["transaction_date"] == "2029-06-24T12:00:00"
+  
+  # Deleting a transaction
+  delete_response = client.delete(
+    f"/transactions/{transaction_id}",
+    headers=headers
+  )
+
+  assert delete_response.status_code == 204
+
+  # Retrieving a transaction by its id, which was deleted earlier 
+  get_transaction_by_id_response = client.get(
+    f"/transactions/{transaction_id}",
+    headers=headers
+  )
+
+  assert get_transaction_by_id_response.status_code == 404
+
+def test_get_transaction(client):
+  # Registering user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "robaak1105",
+      "email": "akroba1105@gmail.com",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert register_response.status_code == 201
+
+  # Logging user in 
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaak1105",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert login_response.status_code == 200
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating a category 
+  category_response = client.post(
+    "/categories",
+    json={
+      "name": "Infra bill"
+    },
+    headers=headers
+  )
+
+  assert category_response.status_code == 201
+
+  category_id = category_response.json()["id"]
+
+  # Creating a transaction 1
+  transaction_response_1 = client.post(
+    "/transactions",
+    json={
+      "amount" : "2238.43",
+      "description": "Bill from AWS services.",
+      "category_id": category_id,
+      "type": "expense",
+      "transaction_date": "2029-06-24T12:00:00"
+    },
+    headers=headers
+  )  
+
+  # Creating transnaction 2
+  transaction_response_2 = client.post(
+    "/transactions",
+    json={
+      "amount": "166150.00",
+      "description": "Bought a G-Wagon at 19",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )  
+
+  # Creating transnaction 3
+  transaction_response_3 = client.post(
+    "/transactions",
+    json={
+      "amount": "565000.00",
+      "description": "Bought a big house with 2 garages and pool.",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  # Creating a transaction 4
+  transaction_response_4 = client.post(
+    "/transactions",
+    json={
+      "amount": "40000.00",
+      "description": "Monthly paycheck.",
+      "type": "income",
+      "category_id": category_id,
+      "transaction_date": "2027-09-16T12:00:00"
+    },
+    headers=headers
+  )
