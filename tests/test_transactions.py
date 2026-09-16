@@ -142,3 +142,84 @@ def test_get_transaction(client):
   assert data["description"] == "Bought a big house with 2 garages and pool."
   assert data["type"] == "expense"
   assert data["transaction_date"] == "2029-09-16T12:00:00"
+
+def test_patch_transaction(client):
+  # Registering a user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "akroba1105",
+      "email": "akroba1105@gmail.com",
+      "password": "robaak11050303"
+    }
+  )
+
+  assert register_response.status_code == 201
+
+  # Logging user in
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "akroba1105",
+      "password": "robaak11050303"
+    }
+  )
+
+  assert login_response.status_code == 200 
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating a category 
+  category_response = client.post(
+    "/categories",
+    json = {
+      "name": "Balance"
+    },
+    headers=headers
+  )
+
+  assert category_response.status_code == 201
+
+  category_id = category_response.json()["id"]
+
+  # Creating a transaction 
+  transaction_response = client.post(
+    "/transactions",
+    json={
+      "amount": "40000.00",
+      "description": "Monthly paycheck.",
+      "type": "income",
+      "category_id": category_id,
+      "transaction_date": "2027-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  transaction_id = transaction_response.json()["id"]
+
+  assert transaction_response.status_code == 201 
+
+  # Patch a transaction 
+  response = client.patch(
+    f"/transactions/{transaction_id}",
+    json={
+      "amount": "56000.00",
+      "description": "Monthly paycheck with bonus."      
+    },
+    headers=headers
+  )
+
+  assert response.status_code == 200
+
+  data = response.json()
+
+  assert data["id"] == transaction_id
+  assert data["amount"] == 56000.00
+  assert data["description"] == "Monthly paycheck with bonus."
+  assert data["type"] == "income"
+  assert data["category_id"] == category_id
+  assert data["transaction_date"] == "2027-09-16T12:00:00"
