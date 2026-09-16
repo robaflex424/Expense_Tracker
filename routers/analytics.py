@@ -359,3 +359,28 @@ async def get_monthly_breakdown_analytics(
   )
 
   return monthly_breakdown
+
+@analytics_router.get(
+  "/largest-transactions",
+  status_code=status.HTTP_200_OK
+  )
+async def get_top_10_largest_transactions(
+  db: db_dependency,
+  limit: int = Query(10, ge=1, le=100),  
+  current_user: User = Depends(get_current_user)
+  ):
+
+  top_10_largest_transactions = (
+    db.query(
+      Transaction
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    ).order_by(
+      Transaction.amount.desc()
+    ).limit(
+      limit
+    ).all()
+  )
+
+  return top_10_largest_transactions
