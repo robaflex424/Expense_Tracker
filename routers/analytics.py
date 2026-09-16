@@ -23,7 +23,10 @@ analytics_router = APIRouter(
   tags=["analytics"]
 )
 
-@analytics_router.get("/income", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
+@analytics_router.get(
+  "/income", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsIncomeResponse)
 async def get_income_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -38,7 +41,10 @@ async def get_income_analytics(
   
   return {"total_income": total_income}
 
-@analytics_router.get("/expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+@analytics_router.get(
+  "/expense", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsExpenseResponse)
 async def get_expense_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -53,7 +59,10 @@ async def get_expense_analytics(
 
   return {"total_expense": total_expense}
 
-@analytics_router.get("/balance", status_code=status.HTTP_200_OK, response_model=AnalyticsGlobalResponse)
+@analytics_router.get(
+  "/balance", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsGlobalResponse)
 async def get_balance_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -77,7 +86,10 @@ async def get_balance_analytics(
 
   return {"balance": balance}
 
-@analytics_router.get("/average-expense", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+@analytics_router.get(
+  "/average-expense", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsExpenseResponse)
 async def get_average_expense_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -92,7 +104,9 @@ async def get_average_expense_analytics(
 
   return {"average_transaction": average_expense or Decimal("0")}
 
-@analytics_router.get("/spending-by-category", status_code=status.HTTP_200_OK)
+@analytics_router.get(
+  "/spending-by-category", 
+  status_code=status.HTTP_200_OK)
 async def get_spendings_by_category(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -113,7 +127,10 @@ async def get_spendings_by_category(
 
   return spendings_by_category
 
-@analytics_router.get("/income-by-category", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
+@analytics_router.get(
+  "/income-by-category", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsIncomeResponse)
 async def get_income_by_category(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -132,7 +149,10 @@ async def get_income_by_category(
 
   return income_by_category
 
-@analytics_router.get("/monthly-spending", status_code=status.HTTP_200_OK, response_model=AnalyticsExpenseResponse)
+@analytics_router.get(
+  "/monthly-spending", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsExpenseResponse)
 async def get_monthly_spending(
   db: db_dependency, 
   current_user: User = Depends(get_current_user)
@@ -154,7 +174,10 @@ async def get_monthly_spending(
 
   return monthly_spending
 
-@analytics_router.get("/monthly-income", status_code=status.HTTP_200_OK, response_model=AnalyticsIncomeResponse)
+@analytics_router.get(
+  "/monthly-income", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsIncomeResponse)
 async def get_monthly_income(
   db: db_dependency, 
   current_user: User = Depends(get_current_user)
@@ -176,7 +199,10 @@ async def get_monthly_income(
 
   return monthly_income
 
-@analytics_router.get("/date-range", status_code=status.HTTP_200_OK, response_model=AnalyticsGlobalResponse)
+@analytics_router.get(
+  "/date-range", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsGlobalResponse)
 async def get_date_range_analytics(
   db: db_dependency,
   current_user: User = Depends(get_current_user),
@@ -217,7 +243,10 @@ async def get_date_range_analytics(
     "balance": balance
   }
 
-@analytics_router.get("/top-category", status_code=status.HTTP_200_OK, response_model=AnalyticsTopCategory)
+@analytics_router.get(
+  "/top-category", 
+  status_code=status.HTTP_200_OK, 
+  response_model=AnalyticsTopCategory)
 async def get_top_category(
   db: db_dependency,
   current_user: User = Depends(get_current_user)
@@ -291,3 +320,42 @@ async def get_percentage_of_category_based_on_total_expenses(
     }
     for category_id, category_total in category_spent
   ]
+
+@analytics_router.get(
+  "/monthly-breakdown",
+  status_code=status.HTTP_200_OK
+  )
+async def get_monthly_breakdown_analytics(
+  db: db_dependency,
+  current_user: User = Depends(get_current_user)
+  ):
+
+  monthly_breakdown = (
+    db.query(
+      func.date_trunc(
+        "month", 
+        Transaction.transaction_date
+      ).label("month"),
+      Transaction.category_id,
+      func.sum(
+        Transaction.amount
+      ).label("monthly_expense")
+    ).filter(
+      Transaction.user_id == current_user.id,
+      Transaction.type == "expense"
+    ).group_by(
+      func.date_trunc(
+        "month", 
+        Transaction.transaction_date
+      ),
+      Transaction.category_id
+    ).order_by(
+      func.date_trunc(
+        "month", 
+        Transaction.transaction_date
+      ),
+      Transaction.category_id
+    ).all()
+  )
+
+  return monthly_breakdown
