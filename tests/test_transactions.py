@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 
 def test_create_transaction(client):
   # Registering user
@@ -660,3 +661,135 @@ def test_filter_transactions_by_amount(client):
   assert len(data_max_amount) == 1
   for amount in data_max_amount:
     assert Decimal(amount["amount"]) <= Decimal(str(max_amount))
+  
+def test_filter_transactions_by_date(client):
+  # Registering user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "robaak1105",
+      "email": "akroba1105@gmail.com",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert register_response.status_code == 201
+
+  # Logging user in 
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaak1105",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert login_response.status_code == 200
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating a category 
+  category_response = client.post(
+    "/categories",
+    json={
+      "name": "Expenses"
+    },
+    headers=headers
+  )
+
+  assert category_response.status_code == 201
+
+  category_id = category_response.json()["id"]
+
+  # Creating a transaction 1
+  transaction_response_1 = client.post(
+    "/transactions",
+    json={
+      "amount": "874.99",
+      "description": "Car part",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-11-05T12:00:00"
+    },
+    headers=headers
+  )
+
+  assert transaction_response_1.status_code == 201
+
+  # Creating transnaction 2
+  transaction_response_2 = client.post(
+    "/transactions",
+    json={
+      "amount": "166.00",
+      "description": "Laptop Charger",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-03-03T12:00:00"
+    },
+    headers=headers
+  )  
+
+  assert transaction_response_2.status_code == 201
+
+  # Creating transnaction 3
+  transaction_response_3 = client.post(
+    "/transactions",
+    json={
+      "amount": "1000.00",
+      "description": "Giftcard",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-05-20T12:00:00"
+    },
+    headers=headers
+  )
+
+  assert transaction_response_3.status_code == 201  
+
+  # Getting transactions by start_date filtering
+  start_date_response = client.get(
+    "/transactions?start_date=2029-06-01",
+    headers=headers
+  )
+
+  assert start_date_response.status_code == 200 
+
+  start_date_data = start_date_response.json()
+
+  assert isinstance(start_date_data, list)
+  assert len(start_date_data) == 1
+
+  start_date = datetime.fromisoformat('2029-06-01T00:00:00')
+
+  for transaction in start_date_data:
+    transaction_date = datetime.fromisoformat(
+      transaction["transaction_date"]
+    )
+
+    assert transaction_date >= start_date
+
+  # Getting transactions by end_date filtering
+  end_date_response = client.get(
+    "/transactions?end_date=2029-06-30",
+    headers=headers
+  )
+
+  assert end_date_response.status_code == 200 
+
+  end_date_data = end_date_response.json()
+
+  assert isinstance(end_date_data,list)
+  assert len(end_date_data) == 2
+
+  end_date = datetime.fromisoformat("2029-06-30T00:00:00")
+
+  for end_transaction in end_date_data:
+    transaction_date = datetime.fromisoformat(
+      end_transaction["transaction_date"]
+    )
+
+    assert transaction_date <= end_date
