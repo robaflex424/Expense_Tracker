@@ -57,45 +57,6 @@ async def create_transaction(
 
   return transaction_model
 
-@transaction_router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
-async def get_transactions(
-  db: db_dependency,
-  current_user: User = Depends(get_current_user),
-  page: int = Query(1, ge=1),
-  page_size: int = Query(10, ge=1, le=100),
-  sort_by: str = Query("created_at"),
-  sort_order: str = Query("desc")
-  ):
-  
-  if sort_by not in ["created_at", "transaction_date", "amount"]:
-    raise HTTPException(
-      status_code=status.HTTP_400_BAD_REQUEST,
-      detail="Invalid sort field."
-    )
-  
-  if sort_order not in ["asc", "desc"]:
-    raise HTTPException(
-      status_code=status.HTTP_400_BAD_REQUEST,
-      detail="Invalid sort order."
-    )
-  
-  offset = (page - 1) * page_size
-
-  query = db.query(Transaction).filter(
-    Transaction.user_id == current_user.id
-  )
-
-  sort_column = getattr(Transaction, sort_by)
-
-  if sort_order == "asc":
-    query = query.order_by(sort_column.asc())
-  else:
-    query = query.order_by(sort_column.desc())
-  
-  transactions = query.offset(offset).limit(page_size).all()
-
-  return transactions
-
 @transaction_router.get("/{transaction_id}", status_code=status.HTTP_200_OK, response_model=TransactionResponse)
 async def get_transaction(
   db: db_dependency,
@@ -178,77 +139,81 @@ async def delete_transaction(
   db.commit()
 
 @transaction_router.get("", status_code=status.HTTP_200_OK, response_model=list[TransactionResponse])
-async def filter_transaction_type(
-  db: db_dependency,
-  type: Literal["income", "expense"] | None = None,
-  page: int = Query(1, ge=1),
-  page_size: int = Query(10, ge=1, le=100),
-  min_amount: Decimal | None = None,
-  max_amount: Decimal | None = None,  
-  start_date: date | None = None,
-  end_date: date | None = None, 
-  sort_by: str = Query("created_at"),
-  sort_order: str = Query("desc"),
-  current_user: User = Depends(get_current_user),
-  ):
-  # --------  IF/ELIF/ELSE TYPE --------   
-  if type == "income":
-    transactions_model = db.query(Transaction).filter(
-      Transaction.type == "income",
-      Transaction.user_id == current_user.id
-    )
-    
-  elif type == "expense":
-    transactions_model = db.query(Transaction).filter(
-      Transaction.type == "expense",
-      Transaction.user_id == current_user.id
-    )
-  else:
-    transactions_model = db.query(Transaction).filter(
-      Transaction.user_id == current_user.id
-    )
-  
-  # --------  Applying max & min_amount on transaction_model  --------  
-  if min_amount is not None:
-    transactions_model = transactions_model.filter(Transaction.amount >= min_amount)
+async def get_transactions(
+    db: db_dependency,
+    current_user: User = Depends(get_current_user),
 
-  if max_amount is not None:
-    transactions_model = transactions_model.filter(Transaction.amount <= max_amount)
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
 
-  # --------  Applying start & end_date on transaction_model  --------  
-  if start_date is not None:
-    transactions_model = transactions_model.filter(Transaction.transaction_date >= start_date)
+    type: Literal["income", "expense"] | None = None,
 
-  if end_date is not None:
-    transactions_model = transactions_model.filter(Transaction.transaction_date <= end_date)
+    min_amount: Decimal | None = None,
+    max_amount: Decimal | None = None,
 
-  # --------  IF SORT_BY IS VALID --------
+    start_date: date | None = None,
+    end_date: date | None = None,
 
-  if sort_by not in ["amount", "created_at", "transaction_date"]:
-    raise HTTPException(
-      status_code=status.HTTP_400_BAD_REQUEST,
-      detail="Invalid sort field."
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc")
+):
+    query = db.query(Transaction).filter(
+        Transaction.user_id == current_user.id
     )
 
-  if sort_order not in ["asc", "desc"]: 
-    raise HTTPException(
-      status_code=status.HTTP_400_BAD_REQUEST,
-      detail="Invalid sort order."
-    )
-  
-  # --------  CREATING OFFSET  --------
+    # Filter by type
+    if type is not None:
+        query = query.filter(
+            Transaction.type == type
+        )
 
-  offset = (page - 1) * page_size
+    # Filter by amount
+    if min_amount is not None:
+        query = query.filter(
+            Transaction.amount >= min_amount
+        )
 
-  sort_column = getattr(Transaction, sort_by)
+    if max_amount is not None:
+        query = query.filter(
+            Transaction.amount <= max_amount
+        )
 
-  # --------  ORDERING TRANSACTIONS --------
-  if sort_order == "asc":
-    transactions = transactions_model.order_by(sort_column.asc())
-  else:
-    transactions = transactions_model.order_by(sort_column.desc())  
+    # Filter by date
+    if start_date is not None:
+        query = query.filter(
+            Transaction.transaction_date >= start_date
+        )
 
-  # Setting offset & limit on transactions so its ready to be returned
-  transactions = transactions.offset(offset).limit(page_size).all()
+    if end_date is not None:
+        query = query.filter(
+            Transaction.transaction_date <= end_date
+        )
 
-  return transactions
+    # Validate sorting
+    if sort_by not in ["created_at", "transaction_date", "amount"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid sort field."
+        )
+
+    if sort_order not in ["asc", "desc"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid sort order."
+        )
+
+    # Pagination
+    offset = (page - 1) * page_size
+
+    # Sorting
+    sort_column = getattr(Transaction, sort_by)
+
+    if sort_order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    # Execute query
+    transactions = query.offset(offset).limit(page_size).all()
+
+    return transactions

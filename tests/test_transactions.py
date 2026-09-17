@@ -438,3 +438,106 @@ def test_get_specific_transaction(client):
 
   assert isinstance(all_transactions_query, list)
   assert len(all_transactions_query) == 2
+
+def test_filter_transactions_by_type(client):
+  # Registering user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "robaak1105",
+      "email": "akroba1105@gmail.com",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert register_response.status_code == 201
+
+  # Logging user in 
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaak1105",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert login_response.status_code == 200
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating a category 
+  category_response = client.post(
+    "/categories",
+    json={
+      "name": "Infra bill"
+    },
+    headers=headers
+  )
+
+  assert category_response.status_code == 201
+
+  category_id = category_response.json()["id"]
+
+  # Creating a transaction 1
+  transaction_response_1 = client.post(
+    "/transactions",
+    json={
+      "amount": "40000.00",
+      "description": "Monthly paycheck.",
+      "type": "income",
+      "category_id": category_id,
+      "transaction_date": "2027-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  assert transaction_response_1.status_code == 201
+
+  # Creating transnaction 2
+  transaction_response_2 = client.post(
+    "/transactions",
+    json={
+      "amount": "166150.00",
+      "description": "Bought a G-Wagon at 19",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )  
+
+  assert transaction_response_2.status_code == 201
+
+  # Creating transnaction 3
+  transaction_response_3 = client.post(
+    "/transactions",
+    json={
+      "amount": "565000.00",
+      "description": "Bought a big house with 2 garages and pool.",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  assert transaction_response_3.status_code == 201
+
+  # Calling get transactions with filter on type == "expense"
+  response = client.get(
+    "/transactions?type=expense",
+    headers=headers
+  )
+
+  assert response.status_code == 200
+
+  data = response.json()
+
+  assert len(data) == 2
+
+
+  
