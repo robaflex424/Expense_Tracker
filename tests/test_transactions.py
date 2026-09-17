@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 def test_create_transaction(client):
   # Registering user
   register_response = client.post(
@@ -539,5 +541,122 @@ def test_filter_transactions_by_type(client):
 
   assert len(data) == 2
 
+def test_filter_transactions_by_amount(client):
+  # Registering user
+  register_response = client.post(
+    "/auth/register",
+    json={
+      "username": "robaak1105",
+      "email": "akroba1105@gmail.com",
+      "password": "akroba11050303"
+    }
+  )
 
+  assert register_response.status_code == 201
+
+  # Logging user in 
+  login_response = client.post(
+    "/auth/login",
+    json={
+      "username": "robaak1105",
+      "password": "akroba11050303"
+    }
+  )
+
+  assert login_response.status_code == 200
+
+  token = login_response.json()["access_token"]
+
+  headers = {
+    "Authorization": f"Bearer {token}"
+  }
+
+  # Creating a category 
+  category_response = client.post(
+    "/categories",
+    json={
+      "name": "Expenses"
+    },
+    headers=headers
+  )
+
+  assert category_response.status_code == 201
+
+  category_id = category_response.json()["id"]
+
+  # Creating a transaction 1
+  transaction_response_1 = client.post(
+    "/transactions",
+    json={
+      "amount": "874.99",
+      "description": "Car part",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2027-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  assert transaction_response_1.status_code == 201
+
+  # Creating transnaction 2
+  transaction_response_2 = client.post(
+    "/transactions",
+    json={
+      "amount": "166.00",
+      "description": "Laptop Charger",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )  
+
+  assert transaction_response_2.status_code == 201
+
+  # Creating transnaction 3
+  transaction_response_3 = client.post(
+    "/transactions",
+    json={
+      "amount": "1000.00",
+      "description": "Giftcard",
+      "type": "expense",
+      "category_id": category_id,
+      "transaction_date": "2029-09-16T12:00:00"
+    },
+    headers=headers
+  )
+
+  assert transaction_response_3.status_code == 201
+
+  # Get request with min_amount
+  min_amount = 500
+
+  response_min_amount = client.get(
+    f"/transactions?min_amount={min_amount}",
+    headers=headers
+  )
+
+  assert response_min_amount.status_code == 200
+
+  data_min_amount = response_min_amount.json()
+
+  assert len(data_min_amount) == 2
+  for expense in data_min_amount:
+    assert Decimal(expense["amount"]) >= Decimal(str(min_amount))
+
+  # Get request with max_amount 
+  max_amount = 500
   
+  response_max_amount = client.get(
+    f"/transactions?max_amount={max_amount}",
+    headers=headers
+  )
+
+  assert response_max_amount.status_code == 200
+
+  data_max_amount = response_max_amount.json()
+
+  assert len(data_max_amount) == 1
+  for amount in data_max_amount:
+    assert Decimal(amount["amount"]) <= Decimal(str(max_amount))
